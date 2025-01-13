@@ -7,6 +7,7 @@ import { RpcException } from '@nestjs/microservices';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { envs } from 'src/config';
 
 @Injectable()
 export class AuthService extends PrismaClient implements OnModuleInit {
@@ -95,7 +96,22 @@ export class AuthService extends PrismaClient implements OnModuleInit {
     }
   }
 
-  verifyToken() {
-    return 'Verify';
+  async verifyToken(token: string) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { sub, iat, exp, ...user } = this.jwtService.verify(token, {
+        secret: envs.jswSecret,
+      });
+
+      return {
+        user: user,
+        token: await this.signJWT(user),
+      };
+    } catch (error) {
+      throw new RpcException({
+        status: 401,
+        message: `Invalid token: ${error}`,
+      });
+    }
   }
 }
